@@ -4,7 +4,7 @@
 #   sh demo/publish.sh
 #
 # Run it after changing tarn/static or demo/. The site is live at
-# https://raigon-pawa.github.io/tarn/ a minute or so later.
+# https://tarn.raigonpawa.dev/ a minute or so later.
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)

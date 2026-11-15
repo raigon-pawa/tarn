@@ -18,6 +18,8 @@ cp "$SRC/app.css" "$OUT/static/"
 cp -R "$SRC/vendor/fonts" "$OUT/static/vendor/"
 cp "$DEMO/mock-api.js" "$DEMO/console.html" "$OUT/"
 : > "$OUT/.nojekyll"
+# Custom domain for GitHub Pages (Cloudflare DNS: CNAME tarn -> raigon-pawa.github.io).
+echo "tarn.raigonpawa.dev" > "$OUT/CNAME"
 
 # app.js: the console iframe points at the demo console page.
 sed 's#`/console?uuid=#`console.html?uuid=#' "$SRC/app.js" > "$OUT/static/app.js"

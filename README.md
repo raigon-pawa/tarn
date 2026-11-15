@@ -15,7 +15,7 @@
 ![Fedora](https://img.shields.io/badge/Fedora-systemd-0e6e78?logo=fedora&logoColor=white)
 ![Version](https://img.shields.io/badge/version-0.1.0-555)
 
-**[Try the live demo](https://raigon-pawa.github.io/tarn/)** · [Download 0.1.0](https://github.com/raigon-pawa/tarn/releases/latest)
+**[Try the live demo](https://tarn.raigonpawa.dev/)** · [Download 0.1.0](https://github.com/raigon-pawa/tarn/releases/latest)
 
 ![Tarn overview](docs/screenshots/overview.png)
 
@@ -27,7 +27,7 @@ covers live CPU ridgelines, a create/import wizard with Windows and Linux
 templates, an in-browser console, snapshots, ISO uploads, PCI/GPU passthrough
 with Looking Glass, and a host readiness checklist.
 
-Want to look around first? The [live demo](https://raigon-pawa.github.io/tarn/)
+Want to look around first? The [live demo](https://tarn.raigonpawa.dev/)
 runs the real web UI in your browser against a simulated host, so you can
 create VMs, take snapshots and type into a console without installing
 anything.
