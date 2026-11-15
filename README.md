@@ -155,7 +155,8 @@ TARN_PASSWORD=... DEMO_ISO=/tmp/alpine-demo.iso python3 tests/ui_test.py   # Pla
 
 `demo/` holds an in-browser mock of the API (`mock-api.js`) and a simulated
 console. `sh demo/build.sh` combines them with the real `tarn/static` UI into
-`_site/`, and `sh demo/publish.sh` pushes that to the `gh-pages` branch.
+`_site/`. GitHub Actions (`.github/workflows/demo.yml`) rebuilds and deploys
+it to GitHub Pages on every push to `main` that touches the UI or the demo.
 
 ### Configuration
 
