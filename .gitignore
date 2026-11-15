@@ -1,0 +1,14 @@
+dev.toml
+dev-passwd
+tests/shots/
+__pycache__/
+*.pyc
+
+# local logs and private notes
+nohup.out
+error.txt
+docs/HANDOFF.md
+*.tar.gz
+.env
+*.pem
+*.key

@@ -1,0 +1,68 @@
+#!/bin/sh
+# lid-screen: switch the laptop's panel off while the lid is closed, and back on
+# when it opens. The machine keeps running (it's a VM host used over SSH); this
+# only protects the screen, which matters for OLED panels that burn in.
+#
+# Runs as root from /etc/init.d/lid-screen. It polls the lid once a second
+# rather than relying on ACPI events, so it also catches a display that comes
+# back on by itself while the lid is shut (a compositor starting or exiting).
+#
+# How the panel is switched off depends on who drives it:
+#   - a Wayland compositor (labwc, cage, sway): wlopm, through the compositor
+#   - the text console: blank its framebuffer (fbcon), which powers the panel down
+# Both are a real power-off (DPMS), not just zero brightness.
+
+INTERVAL=${LID_SCREEN_INTERVAL:-1}
+
+lid_file=$(ls /proc/acpi/button/lid/*/state 2>/dev/null | head -n1)
+panel=$(ls -d /sys/class/drm/card*-eDP-* 2>/dev/null | head -n1)
+[ -n "$lid_file" ] || { echo "lid-screen: no lid switch found" >&2; exit 1; }
+[ -n "$panel" ] || { echo "lid-screen: no built-in (eDP) panel found" >&2; exit 1; }
+
+log() { logger -t lid-screen "$*"; }
+
+# Prints "RUNTIME_DIR SOCKET_NAME" for a running Wayland compositor, if any.
+compositor() {
+	for comm in /proc/[0-9]*/comm; do
+		case $(cat "$comm" 2>/dev/null) in
+		labwc | cage | sway | wayfire | river | Hyprland) ;;
+		*) continue ;;
+		esac
+		pid=${comm%/comm}
+		dir=$(tr '\0' '\n' < "$pid/environ" 2>/dev/null | sed -n 's/^XDG_RUNTIME_DIR=//p' | head -n1)
+		[ -n "$dir" ] || continue
+		for sock in "$dir"/wayland-[0-9]*; do
+			case $sock in *.lock) continue ;; esac
+			[ -S "$sock" ] && { echo "$dir ${sock##*/}"; return 0; }
+		done
+	done
+	return 1
+}
+
+# screen on|off
+screen() {
+	if set -- "$1" $(compositor) && [ $# -eq 3 ] && command -v wlopm >/dev/null; then
+		XDG_RUNTIME_DIR=$2 WAYLAND_DISPLAY=$3 wlopm --"$1" '*' 2>/dev/null && return 0
+	fi
+	# No compositor (or it refused): the console's framebuffer. 4 = powerdown, 0 = on.
+	if [ "$1" = off ]; then mode=4; else mode=0; fi
+	for fb in /sys/class/graphics/fb[0-9]*/blank; do
+		echo "$mode" > "$fb" 2>/dev/null
+	done
+}
+
+we_turned_it_off=0
+while :; do
+	lid=$(awk '{print $2}' "$lid_file" 2>/dev/null)
+	dpms=$(cat "$panel/dpms" 2>/dev/null)
+	if [ "$lid" = closed ] && [ "$dpms" = On ]; then
+		screen off
+		[ "$we_turned_it_off" = 1 ] || log "lid closed: screen off"
+		we_turned_it_off=1
+	elif [ "$lid" = open ] && [ "$we_turned_it_off" = 1 ]; then
+		screen on
+		log "lid open: screen on"
+		we_turned_it_off=0
+	fi
+	sleep "$INTERVAL"
+done

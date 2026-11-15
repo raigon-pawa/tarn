@@ -1,0 +1,13 @@
+# Local development config: plain HTTP on localhost, password file in the repo.
+#   cp dev.example.toml dev.toml
+#   python3 -m tarn --config dev.toml passwd
+#   python3 -m tarn --config dev.toml serve
+[server]
+listen = "127.0.0.1"
+port = 8006
+allow_plain_http = true
+tls_cert = "./no-cert.pem"
+tls_key = "./no-key.pem"
+
+[auth]
+password_file = "./dev-passwd"

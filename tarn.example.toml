@@ -1,0 +1,32 @@
+# Tarn configuration. Copied to /etc/tarn/tarn.toml by install.sh.
+# Every key is optional; the values below are the defaults.
+
+[server]
+listen = "0.0.0.0"          # "127.0.0.1" to reach Tarn only through an SSH tunnel
+port = 8006
+tls_cert = "/etc/tarn/tls/cert.pem"
+tls_key = "/etc/tarn/tls/key.pem"
+allow_plain_http = false    # never turn this on for a LAN-facing host
+
+[auth]
+password_file = "/etc/tarn/passwd"   # set with: tarn passwd
+session_hours = 12
+
+[libvirt]
+uri = "qemu:///system"
+
+[storage]
+images_pool = "default"
+images_path = "/var/lib/libvirt/images"
+iso_pool = "iso"
+iso_path = "/var/lib/libvirt/iso"
+
+[network]
+default = "default"
+# Create libvirt's NAT network (virbr0, 192.168.122.0/24) if it's missing.
+# NAT is what works over Wi-Fi; bridges need wired Ethernet.
+create_default = true
+
+[stats]
+interval_seconds = 2
+history_points = 150        # 5 minutes of history at 2 s

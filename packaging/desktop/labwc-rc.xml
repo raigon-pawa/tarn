@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- Default labwc config for the Tarn kiosk (system-wide). A user's own
+     ~/.config/labwc/rc.xml replaces it. Reference: man labwc-config -->
+<labwc_config>
+  <libinput>
+    <device category="touchpad">
+      <tap>yes</tap>
+      <tapButtonMap>lrm</tapButtonMap>
+      <disableWhileTyping>yes</disableWhileTyping>
+    </device>
+  </libinput>
+
+  <keyboard>
+    <default />
+    <keybind key="W-l">
+      <action name="Execute" command="tarn looking-glass" />
+    </keybind>
+    <keybind key="XF86MonBrightnessUp">
+      <action name="Execute" command="brightnessctl -q set 5%+" />
+    </keybind>
+    <keybind key="XF86MonBrightnessDown">
+      <action name="Execute" command="brightnessctl -q -n1% set 5%-" />
+    </keybind>
+  </keyboard>
+
+  <windowRules>
+    <windowRule identifier="tarn" serverDecoration="no" />
+  </windowRules>
+</labwc_config>

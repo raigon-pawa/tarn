@@ -1,0 +1,19 @@
+#!/sbin/openrc-run
+# Screen off while the lid is closed; the laptop keeps running.
+# Installed to /etc/init.d/lid-screen by install.sh --desktop (or server-mode.sh).
+
+name="lid-screen"
+description="Switch the built-in panel off while the lid is closed"
+
+supervisor=supervise-daemon
+command="/usr/local/sbin/lid-screen"
+respawn_delay=5
+respawn_max=0
+
+stop_post() {
+	# Leave the screen usable if the service stops with the lid shut and reopened later.
+	for fb in /sys/class/graphics/fb[0-9]*/blank; do
+		echo 0 > "$fb" 2>/dev/null
+	done
+	return 0
+}

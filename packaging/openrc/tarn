@@ -1,0 +1,23 @@
+#!/sbin/openrc-run
+# OpenRC service for Tarn. Installed to /etc/init.d/tarn by install.sh.
+
+name="tarn"
+description="Tarn web manager for KVM/libvirt"
+
+supervisor=supervise-daemon
+command="/usr/local/bin/tarn"
+command_args="--config ${TARN_CONFIG:-/etc/tarn/tarn.toml} serve"
+command_user="tarn:libvirt"
+output_log="/var/log/tarn/tarn.log"
+error_log="/var/log/tarn/tarn.log"
+respawn_delay=3
+respawn_max=0
+
+depend() {
+	need net libvirtd
+	after firewall
+}
+
+start_pre() {
+	checkpath --directory --owner tarn:libvirt --mode 0750 /var/log/tarn
+}

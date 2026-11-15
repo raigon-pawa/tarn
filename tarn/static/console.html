@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Console</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; background: #000; }
+    .cbar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 7px 12px; background: var(--bg); border-bottom: 1px solid var(--line);
+    }
+    .cbar .name { font-weight: 800; font-size: 16px; letter-spacing: -0.01em; margin-right: 6px; }
+    .cbar .status { color: var(--muted); font-size: 14px; flex: 1; min-width: 120px; }
+    .cbar .status.bad { color: var(--danger); }
+    #screen { flex: 1; min-height: 0; position: relative; }
+    #overlay {
+      position: absolute; inset: 0; display: grid; place-items: center; color: #cfdcda; pointer-events: none;
+      font-size: 15px; text-align: center; padding: 24px;
+    }
+    body.embed .cbar .name { display: none; }
+  </style>
+</head>
+<body>
+  <div class="cbar">
+    <span class="name" id="vmname">Console</span>
+    <span class="status" id="status" role="status">Connecting…</span>
+    <button class="btn btn-sm" id="cad" type="button" disabled title="Send Ctrl+Alt+Del to the VM">Ctrl+Alt+Del</button>
+    <button class="btn btn-sm" id="scale" type="button" aria-pressed="true">Fit to window</button>
+    <button class="btn btn-sm" id="paste" type="button" disabled title="Type the clipboard text into the VM">Type clipboard</button>
+    <button class="btn btn-sm" id="full" type="button">Full screen</button>
+    <button class="btn btn-sm" id="reconnect" type="button" hidden>Reconnect</button>
+  </div>
+  <div id="screen"><div id="overlay"></div></div>
+  <script type="module" src="/static/console.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+#!/bin/sh
+# Tarn on this machine's own screen: labwc (for touchpad tap-to-click and
+# shortcuts like Super+L for Looking Glass) running the desktop app full screen,
+# with PipeWire for sound (Looking Glass plays the VM's audio through it).
+# Quitting the app (Ctrl+Q) also exits labwc. Installed by: install.sh --desktop
+: "${XDG_RUNTIME_DIR:=/tmp/$(id -u)-runtime-dir}"
+mkdir -pm 0700 "$XDG_RUNTIME_DIR" && export XDG_RUNTIME_DIR
+APP=${TARN_APP:-tarn desktop}
+
+session() {
+	# Sound: PipeWire with its PulseAudio bridge. Without it Looking Glass is silent.
+	if [ -x /usr/libexec/pipewire-launcher ]; then
+		/usr/libexec/pipewire-launcher >/dev/null 2>&1 &
+	elif command -v pipewire >/dev/null; then
+		pipewire >/dev/null 2>&1 & wireplumber >/dev/null 2>&1 & pipewire-pulse >/dev/null 2>&1 &
+	fi
+	exec labwc -S "$0 --app"
+}
+
+# labwc's startup command: screen-off on idle, then the app (labwc exits with it).
+if [ "${1:-}" = --app ]; then
+	if command -v swayidle >/dev/null && command -v wlopm >/dev/null; then
+		# OLED panels burn in: power the screen off after 10 idle minutes; any key or touch wakes it.
+		swayidle timeout "${TARN_IDLE_SECONDS:-600}" "wlopm --off '*'" resume "wlopm --on '*'" >/dev/null 2>&1 &
+	fi
+	exec $APP --theme "${TARN_THEME:-dark}" --fullscreen
+fi
+
+# PipeWire wants a session bus; there is none outside a desktop login.
+if [ "${1:-}" != --in-session ] && [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && command -v dbus-run-session >/dev/null; then
+	exec dbus-run-session -- "$0" --in-session
+fi
+session

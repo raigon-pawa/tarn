@@ -1,0 +1,21 @@
+# systemd unit for running Tarn on a systemd distro (for example Fedora,
+# to try Tarn before moving the laptop to Alpine).
+[Unit]
+Description=Tarn web manager for KVM/libvirt
+Wants=network-online.target
+After=network-online.target libvirtd.service virtqemud.service
+
+[Service]
+User=tarn
+Group=libvirt
+ExecStart=/usr/local/bin/tarn --config /etc/tarn/tarn.toml serve
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+ReadOnlyPaths=/etc/tarn
+
+[Install]
+WantedBy=multi-user.target
