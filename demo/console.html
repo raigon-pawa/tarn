@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Console</title>
+  <link rel="stylesheet" href="static/app.css">
+  <style>
+    html, body { height: 100%; }
+    body { display: flex; flex-direction: column; background: #000; }
+    .cbar {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      padding: 7px 12px; background: var(--bg); border-bottom: 1px solid var(--line);
+    }
+    .cbar .name { font-weight: 800; font-size: 16px; letter-spacing: -0.01em; margin-right: 6px; }
+    .cbar .status { color: var(--muted); font-size: 14px; flex: 1; min-width: 120px; }
+    body.embed .cbar .name { display: none; }
+    #screen { flex: 1; min-height: 0; position: relative; overflow: hidden; outline: none; }
+    #screen:focus-visible { box-shadow: inset 0 0 0 2px #5bc2c8; }
+
+    /* text console (Linux, BSD) */
+    .term {
+      position: absolute; inset: 0; overflow-y: auto; padding: 14px 16px;
+      font: 15px/1.45 "Overpass Mono", ui-monospace, Menlo, monospace;
+      color: #c9d6d4; background: #050a0b; white-space: pre-wrap; word-break: break-word;
+    }
+    .term .dim { color: #6f8584; }
+    .term .ok { color: #7fd1a4; }
+    .term .acc { color: #5bc2c8; }
+    .term .cursor { display: inline-block; width: 0.6em; background: #c9d6d4; animation: blink 1.1s steps(1) infinite; }
+    #screen:not(:focus) .term .cursor { background: transparent; outline: 1px solid #6f8584; animation: none; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* graphical guest (Windows) */
+    .desk {
+      position: absolute; inset: 0; display: flex; flex-direction: column; color: #fff;
+      background: radial-gradient(120% 90% at 30% 20%, #2a8f99 0%, #0e4f58 45%, #08262c 100%);
+      font-family: "Overpass", system-ui, sans-serif;
+    }
+    .desk .center { flex: 1; display: grid; place-content: center; text-align: center; gap: 6px; }
+    .desk .clock { font-size: clamp(48px, 11vw, 120px); font-weight: 250; letter-spacing: -0.04em; line-height: 1; }
+    .desk .date { font-size: 20px; opacity: 0.85; }
+    .desk .who { margin-top: 26px; font-size: 15px; opacity: 0.8; }
+    .desk .bar {
+      height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 14px;
+      background: rgba(6, 22, 26, 0.72); backdrop-filter: blur(8px); font-size: 13px;
+    }
+    .desk .bar .tile { width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,0.16); }
+    .desk .bar .tile.on { background: rgba(91,194,200,0.75); }
+    .desk .bar .sp { flex: 1; }
+    .desk .msg {
+      position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
+      background: rgba(6,22,26,0.85); padding: 8px 14px; border-radius: 6px; font-size: 14px;
+      opacity: 0; transition: opacity .25s;
+    }
+    .desk .msg.show { opacity: 1; }
+
+    .paused {
+      position: absolute; inset: 0; display: grid; place-items: center; color: #cfdcda;
+      background: rgba(0,0,0,0.55); font-size: 17px; pointer-events: none;
+    }
+  </style>
+  <script src="mock-api.js"></script>
+</head>
+<body>
+  <div class="cbar">
+    <span class="name" id="vmname">Console</span>
+    <span class="status" id="status" role="status">Connecting…</span>
+    <button class="btn btn-sm" id="cad" type="button" disabled title="Send Ctrl+Alt+Del to the VM">Ctrl+Alt+Del</button>
+    <button class="btn btn-sm" id="paste" type="button" disabled title="Type the clipboard text into the VM">Type clipboard</button>
+    <button class="btn btn-sm" id="full" type="button">Full screen</button>
+  </div>
+  <div id="screen" tabindex="0" aria-label="VM screen"></div>
+  <script>
+  (() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get("uuid");
+    if (params.get("embed")) document.body.classList.add("embed");
+    const $ = (x) => document.getElementById(x);
+    const screen = $("screen");
+    const status = $("status");
+    const vm = window.TarnDemo && window.TarnDemo.vm(id);
+
+    $("full").addEventListener("click", () => {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(() => {});
+    });
+
+    if (!vm) { status.textContent = "No such VM"; return; }
+    $("vmname").textContent = vm.name;
+    document.title = `${vm.name} console`;
+    if (vm.state !== "running" && vm.state !== "paused") {
+      status.textContent = "The VM is not running";
+      return;
+    }
+
+    setTimeout(() => {
+      status.textContent = "Connected. Click the screen to type.";
+      $("cad").disabled = false;
+      $("paste").disabled = !navigator.clipboard;
+      if (vm.os_type === "windows") desktop(); else terminal();
+      if (vm.state === "paused") {
+        const p = document.createElement("div");
+        p.className = "paused";
+        p.textContent = "Paused. Resume the VM to use it.";
+        screen.append(p);
+      }
+    }, 450);
+
+    // ---------------------------------------------------------- Windows guest
+    function desktop() {
+      const g = vm.guest || {};
+      screen.innerHTML = `
+        <div class="desk">
+          <div class="msg" id="msg"></div>
+          <div class="center">
+            <div class="clock" id="clock"></div>
+            <div class="date" id="date"></div>
+            <div class="who">${(g.users && g.users[0]) || "user"} on ${g.hostname || vm.name}, ${g.os || "Windows guest"}</div>
+          </div>
+          <div class="bar"><span class="tile on"></span><span class="tile"></span><span class="tile"></span><span class="tile"></span>
+            <span class="sp"></span><span>Looking Glass ${vm.looking_glass ? "ready" : "off"}</span><span id="tclock"></span></div>
+        </div>`;
+      const upd = () => {
+        const d = new Date();
+        $("clock").textContent = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        $("date").textContent = d.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+        $("tclock").textContent = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      };
+      upd(); setInterval(upd, 5000);
+      const msg = (t) => { const m = $("msg"); m.textContent = t; m.classList.add("show"); setTimeout(() => m.classList.remove("show"), 2200); };
+      $("cad").addEventListener("click", () => { msg("Ctrl+Alt+Del sent to the guest"); screen.focus(); });
+      $("paste").addEventListener("click", () => { msg("Clipboard typed into the guest"); screen.focus(); });
+      screen.addEventListener("keydown", (e) => { if (e.key.length === 1) msg(`Key "${e.key}" sent to the guest`); });
+    }
+
+    // ---------------------------------------------------------- text guest
+    function terminal() {
+      const g = vm.guest || {};
+      const bsd = vm.os_type === "other";
+      const host = (g.hostname || vm.name).toLowerCase();
+      const osName = g.os || (bsd ? "FreeBSD 14.3-RELEASE" : "Linux");
+      const user = (g.users && g.users[0]) || "root";
+      const term = document.createElement("div");
+      term.className = "term";
+      screen.append(term);
+      const out = document.createElement("span");
+      const line = document.createElement("span");
+      const cur = document.createElement("span");
+      cur.className = "cursor"; cur.textContent = " ";
+      term.append(out, line, cur);
+      let buf = "";
+      const hist = []; let hi = 0;
+
+      const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+      const print = (html) => { out.insertAdjacentHTML("beforeend", html); term.scrollTop = term.scrollHeight; };
+      const println = (t = "", cls) => print((cls ? `<span class="${cls}">${esc(t)}</span>` : esc(t)) + "\n");
+      const promptStr = () => `${user}@${host}:~$ `;
+      const prompt = () => print(`<span class="acc">${esc(promptStr())}</span>`);
+      const render = () => { line.textContent = buf; term.scrollTop = term.scrollHeight; };
+
+      const mem = vm.memory, gib = (n) => (n / 1024 ** 3).toFixed(1) + "G";
+      const fs = g.filesystems || [{ mount: "/", total: 30 * 1024 ** 3, used: 5 * 1024 ** 3 }];
+      const ip = (vm.ips && vm.ips[0]) || null;
+      const cmds = {
+        help: () => ["Commands in this demo console:",
+          "  uname -a   uptime   free -h   df -h   ip a   ls   whoami   date",
+          "  cat /etc/os-release   neofetch   echo TEXT   clear   exit",
+          "", "This is a simulated guest. A real Tarn console is a live VNC screen."].join("\n"),
+        "uname -a": () => bsd ? `FreeBSD ${host} 14.3-RELEASE FreeBSD 14.3-RELEASE GENERIC amd64`
+          : `Linux ${host} 6.12.48-0-virt #1-Alpine SMP PREEMPT_DYNAMIC x86_64 GNU/Linux`,
+        uname: () => bsd ? "FreeBSD" : "Linux",
+        whoami: () => user,
+        hostname: () => host,
+        date: () => new Date().toString(),
+        uptime: () => ` ${new Date().toTimeString().slice(0, 8)} up 1 day,  3:12,  1 user,  load average: 0.08, 0.11, 0.09`,
+        "free -h": () => [
+          "               total        used        free      shared  buff/cache   available",
+          `Mem:           ${gib(mem).padEnd(12)}${gib(mem * 0.32).padEnd(12)}${gib(mem * 0.41).padEnd(12)}12M         ${gib(mem * 0.27).padEnd(12)}${gib(mem * 0.64)}`,
+          "Swap:             0B          0B          0B"].join("\n"),
+        "df -h": () => ["Filesystem      Size  Used Avail Use% Mounted on",
+          ...fs.map((f, i) => `/dev/vda${i + 1}       ${gib(f.total).padEnd(6)}${gib(f.used).padEnd(6)}${gib(f.total - f.used).padEnd(6)}${String(Math.round((100 * f.used) / f.total)).padStart(3)}% ${f.mount}`)].join("\n"),
+        "ip a": () => ["1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536", "    inet 127.0.0.1/8 scope host lo",
+          `2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500`,
+          `    link/ether ${(vm.nics[0] && vm.nics[0].mac) || "52:54:00:00:00:01"} brd ff:ff:ff:ff:ff:ff`,
+          ip ? `    inet ${ip.addr}/${ip.prefix} brd 192.168.122.255 scope global eth0` : "    (no address yet)"].join("\n"),
+        ls: () => bsd ? ".cshrc  .profile  ports" : "notes.md  projects  tarn",
+        "ls -la": () => "drwxr-xr-x  5 user user 4096 .\ndrwxr-xr-x  3 root root 4096 ..\n-rw-r--r--  1 user user  220 .profile\n-rw-r--r--  1 user user 1204 notes.md\ndrwxr-xr-x  4 user user 4096 projects\ndrwxr-xr-x  6 user user 4096 tarn",
+        "cat /etc/os-release": () => bsd ? 'NAME=FreeBSD\nVERSION="14.3-RELEASE"\nID=freebsd'
+          : `NAME="${osName.replace(/ v?[\d.].*$/, "")}"\nPRETTY_NAME="${osName}"\nHOME_URL="https://example.org/"`,
+        neofetch: () => {
+          const art = ["   /\\      ", "  /  \\  /\\ ", " /    \\/  \\", "/__________\\", "  ~~~~~~~~  "];
+          const info = [`${user}@${host}`, `OS: ${osName}`, `Host: KVM/QEMU (Standard PC Q35)`,
+            `CPU: AMD Ryzen 9 9955HX (${vm.vcpus}) @ host-passthrough`, `Memory: ${gib(mem * 0.32)} / ${gib(mem)}`];
+          return art.map((a, i) => `<span class="acc">${esc(a)}</span>  ${esc(info[i] || "")}`).join("\n");
+        },
+        sudo: () => "This is a demo guest: you are already as root as it gets.",
+        doas: () => "This is a demo guest: you are already as root as it gets.",
+      };
+      const htmlCmds = new Set(["neofetch"]);
+
+      function run(cmdline) {
+        const c = cmdline.trim().replace(/\s+/g, " ");
+        if (!c) return;
+        if (c === "clear") { out.textContent = ""; return; }
+        if (c === "exit" || c === "logout") { println("logout"); println(""); boot(true); return "noprompt"; }
+        if (c.startsWith("echo ")) { println(c.slice(5)); return; }
+        const key = Object.keys(cmds).find((k) => c === k) || (c.split(" ")[0] in cmds && ["sudo", "doas"].includes(c.split(" ")[0]) ? c.split(" ")[0] : null);
+        if (!key) { println(`${bsd ? "" : "sh: "}${c.split(" ")[0]}: not found (try "help")`); return; }
+        const r = cmds[key]();
+        if (htmlCmds.has(key)) print(r + "\n"); else println(r);
+      }
+
+      function boot(relogin) {
+        if (!relogin) {
+          println(bsd ? "FreeBSD/amd64 (" + host + ") (ttyv0)" : `Welcome to ${osName}!`, "dim");
+          println("Kernel on an x86_64 (/dev/tty1)", "dim");
+          println("");
+        }
+        println(`${host} login: ${user}`);
+        println("Password: ", "dim");
+        println(`Last login: ${new Date(Date.now() - 86400000).toDateString()} on tty1`, "dim");
+        println("");
+        print(`Simulated guest console. Type <span class="ok">help</span> to see what works here.\n\n`);
+        prompt();
+      }
+
+      screen.addEventListener("keydown", (e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey) {
+          if (e.ctrlKey && (e.key === "c" || e.key === "C")) { e.preventDefault(); print(esc(buf) + "^C\n"); buf = ""; render(); prompt(); }
+          if (e.ctrlKey && (e.key === "l" || e.key === "L")) { e.preventDefault(); out.textContent = ""; prompt(); }
+          return;
+        }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          print(esc(buf) + "\n");
+          const c = buf; buf = ""; render();
+          if (c.trim()) { hist.push(c); hi = hist.length; }
+          if (run(c) !== "noprompt") prompt();
+        } else if (e.key === "Backspace") { e.preventDefault(); buf = buf.slice(0, -1); render(); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); if (hi > 0) { buf = hist[--hi]; render(); } }
+        else if (e.key === "ArrowDown") { e.preventDefault(); hi = Math.min(hist.length, hi + 1); buf = hist[hi] || ""; render(); }
+        else if (e.key === "Tab") { e.preventDefault(); const m = Object.keys(cmds).find((k) => buf && k.startsWith(buf)); if (m) { buf = m; render(); } }
+        else if (e.key.length === 1) { e.preventDefault(); if (buf.length < 400) buf += e.key; render(); }
+      });
+      $("cad").addEventListener("click", () => { print(esc(buf) + "\n"); buf = ""; render(); println("Ctrl+Alt+Del received: the guest would reboot now (not in the demo).", "dim"); prompt(); screen.focus(); });
+      $("paste").addEventListener("click", async () => {
+        let t = "";
+        try { t = await navigator.clipboard.readText(); } catch { status.textContent = "Clipboard access was blocked by the browser"; return; }
+        buf += t.replace(/\n/g, " ").slice(0, 400 - buf.length); render(); screen.focus();
+        status.textContent = `Typed ${t.length} characters`;
+      });
+      boot(false);
+      screen.focus();
+    }
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<div class="demo-banner" role="note">
+  <span><b>Live demo.</b> Everything runs in your browser on a made-up host. Nothing you do here touches a real machine. Any password signs in.</span>
+  <span class="demo-links"><button type="button" class="demo-reset" onclick="TarnDemo.reset()">Reset demo</button><a href="https://github.com/raigon-pawa/tarn">Get Tarn on GitHub</a></span>
+</div>
+<style>
+  .demo-banner {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px;
+    padding: 8px 16px; font-size: 14px; line-height: 1.4;
+    background: var(--accent); color: var(--accent-ink);
+  }
+  .demo-banner .demo-links { display: flex; gap: 14px; align-items: center; white-space: nowrap; }
+  .demo-banner a, .demo-banner .demo-reset {
+    color: inherit; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px;
+    background: none; border: 0; padding: 0; cursor: pointer;
+  }
+</style>

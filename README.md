@@ -15,6 +15,8 @@
 ![Fedora](https://img.shields.io/badge/Fedora-systemd-0e6e78?logo=fedora&logoColor=white)
 ![Version](https://img.shields.io/badge/version-0.1.0-555)
 
+**[Try the live demo](https://raigon-pawa.github.io/tarn/)** · [Download 0.1.0](https://github.com/raigon-pawa/tarn/releases/latest)
+
 ![Tarn overview](docs/screenshots/overview.png)
 
 </div>
@@ -24,6 +26,11 @@ UI and a native GTK desktop app for running virtual machines on one host. It
 covers live CPU ridgelines, a create/import wizard with Windows and Linux
 templates, an in-browser console, snapshots, ISO uploads, PCI/GPU passthrough
 with Looking Glass, and a host readiness checklist.
+
+Want to look around first? The [live demo](https://raigon-pawa.github.io/tarn/)
+runs the real web UI in your browser against a simulated host, so you can
+create VMs, take snapshots and type into a console without installing
+anything.
 
 It is deliberately thin. libvirt already does the hard parts (QEMU process
 management, storage pools, NAT networking, firmware selection, TPM emulation).
@@ -142,6 +149,12 @@ TARN_PASSWORD=... DEMO_ISO=/tmp/alpine-demo.iso python3 tests/ui_test.py   # Pla
 
 `tests/make-demo-iso.sh` builds a tiny bootable ISO for the UI test.
 
+### Demo site
+
+`demo/` holds an in-browser mock of the API (`mock-api.js`) and a simulated
+console. `sh demo/build.sh` combines them with the real `tarn/static` UI into
+`_site/`, and `sh demo/publish.sh` pushes that to the `gh-pages` branch.
+
 ### Configuration
 
 All settings live in `/etc/tarn/tarn.toml`. Every key is optional;
@@ -194,6 +207,7 @@ tarn/
 install.sh         Alpine (OpenRC) and Fedora (systemd) installer
 packaging/         OpenRC script, systemd unit, kiosk session, lid-screen daemon
 tests/             API and Playwright UI tests
+demo/              GitHub Pages demo: mock API, simulated console, build script
 docs/              Alpine install guide and screenshots
 ```
 

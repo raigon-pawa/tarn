@@ -12,3 +12,4 @@ docs/HANDOFF.md
 .env
 *.pem
 *.key
+_site/
