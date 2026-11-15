@@ -15,11 +15,16 @@ import os
 import re
 import shutil
 import subprocess
+import shlex
 import time
+from pathlib import Path
 
 from .. import host
 
-SETUP_HINT = "doas sh ~/src/tarn/packaging/desktop/system-access.sh $USER"
+# packaging/ sits next to the tarn package, both in a source checkout and in
+# an install (install.sh copies system-access.sh into /opt/tarn/packaging).
+_ACCESS_SCRIPT = Path(__file__).resolve().parents[2] / "packaging" / "desktop" / "system-access.sh"
+SETUP_HINT = f"doas sh {shlex.quote(str(_ACCESS_SCRIPT))} $USER"
 
 
 def _run(*args: str, timeout: float = 5) -> tuple[int, str]:

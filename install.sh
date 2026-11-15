@@ -167,6 +167,9 @@ say "Installing Tarn to $PREFIX"
 rm -rf "$PREFIX.new"
 mkdir -p "$PREFIX.new"
 cp -R "$HERE/tarn" "$PREFIX.new/"
+# The desktop panel's setup hints point at this script, so ship it with the code.
+mkdir -p "$PREFIX.new/packaging/desktop"
+cp "$HERE/packaging/desktop/system-access.sh" "$PREFIX.new/packaging/desktop/"
 find "$PREFIX.new" -name '__pycache__' -type d -prune -exec rm -rf {} +
 rm -rf "$PREFIX.old"
 [ -d "$PREFIX" ] && mv "$PREFIX" "$PREFIX.old"
