@@ -29,7 +29,7 @@ front:
 2. **Keep the Windows image.** If you made `windows.vhdx` with Disk2vhd for the
    VM migration, make sure it's on the external drive and not on the disk
    you're about to wipe.
-3. **Copy Tarn somewhere safe**: put `tarn-0.1.0.tar.gz` on a USB stick or the
+3. **Copy Tarn somewhere safe**: put `tarn-0.1.1.tar.gz` on a USB stick or the
    external drive.
 4. If the laptop has two NVMe drives, decide which one gets Alpine. The other
    can hold VM disks later (mount it at `/var/lib/libvirt/images`).
@@ -112,7 +112,7 @@ doas grub-mkconfig -o /boot/grub/grub.cfg
 Copy the tarball over (USB stick or `scp`), then:
 
 ```sh
-tar xzf tarn-0.1.0.tar.gz
+tar xzf tarn-0.1.1.tar.gz
 cd tarn
 doas sh install.sh
 ```

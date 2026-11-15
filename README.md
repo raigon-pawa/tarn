@@ -13,9 +13,10 @@
 ![libvirt](https://img.shields.io/badge/libvirt-KVM%20%2F%20QEMU-0e6e78)
 ![Alpine](https://img.shields.io/badge/Alpine-OpenRC-0e6e78?logo=alpinelinux&logoColor=white)
 ![Fedora](https://img.shields.io/badge/Fedora-systemd-0e6e78?logo=fedora&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.1.0-555)
+![Version](https://img.shields.io/badge/version-0.1.1-555)
+![License: MIT](https://img.shields.io/badge/license-MIT-555)
 
-**[Try the live demo](https://tarn.raigonpawa.dev/)** · [Download 0.1.0](https://github.com/raigon-pawa/tarn/releases/latest)
+**[Try the live demo](https://tarn.raigonpawa.dev/)** · [Download 0.1.1](https://github.com/raigon-pawa/tarn/releases/latest)
 
 ![Tarn overview](docs/screenshots/overview.png)
 
@@ -50,6 +51,7 @@ change freely. There is no build step, no database and no container runtime.
 - [REST API](#rest-api)
 - [Scope and roadmap](#scope-and-roadmap)
 - [Credits](#credits)
+- [License](#license)
 
 ## Features
 
@@ -272,3 +274,8 @@ Ideas for what comes next:
 [noVNC](https://github.com/novnc/noVNC) 1.7.0 (MPL-2.0) and the
 [Overpass](https://overpassfont.org/) typeface (OFL-1.1) are vendored under
 `tarn/static/vendor` with their licences.
+
+## License
+
+Tarn is released under the [MIT License](LICENSE). The vendored noVNC and
+Overpass files keep their own licences (MPL-2.0 and OFL-1.1).
