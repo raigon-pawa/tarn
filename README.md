@@ -1,5 +1,10 @@
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo-dark.svg">
+  <img src="docs/brand/logo-light.svg" alt="Tarn logo" width="120">
+</picture>
+
 # Tarn
 
 **A small, Proxmox-style manager for a single KVM/libvirt host, built for Alpine Linux.**
